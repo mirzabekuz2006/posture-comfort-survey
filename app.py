@@ -49,7 +49,7 @@ else:
         "Always (5)": 5
     }
    with st.form("survey_form"):
-        for i, q_text in enumerate(questions):
+       for i, q_text in enumerate(questions):
             choice = st.select_slider(
                 f"{i+1}. {q_text}",
                 options=list(options_map.keys())
