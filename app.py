@@ -1,6 +1,12 @@
 import streamlit as st
 import json
 import os
+from datetime import datetime
+
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = {}
 
 v_int = 75
 v_str = "Assessment"
@@ -30,97 +36,123 @@ def get_interpretation(score):
         return "Moderate Discomfort & Need for Ergonomic Adjustments: Troubled, strained, problematic, painful, fatigued, disruptive"
     else:
         return "High Discomfort & Urgent Posture Workshop: Critical, severe, alarming, chronic, debilitating, unsustainable"
-st.title("Program Evaluation Survey")
 
-questions = load_survey_data('questions.json')
-
-if not questions:
-    st.error("Error: questions.json not found!")
-else:
-    options_map = {
-        "Never / Strongly Disagree (0)": 0,
-        "Rarely / Disagree (1)": 1,
-        "Sometimes / Neutral (2)": 2,
-        "Often / Agree (3)": 3,
-        "Very Often / Strongly Agree (4)": 4,
-        "Always / Completely Agree (5)": 5
-    }
+if not st.session_state.authenticated:
+    st.title("User Login")
+    st.subheader("Please enter your details to unlock the survey")
     
-    responses = []
-    
-    with st.form("survey_form"):
-        u_name = st.text_input("Name")
-        u_surname = st.text_input("Surname")
-        u_dob = st.text_input("Date of Birth (YYYY-MM-DD)")
-        u_id = st.text_input("ID (5 digits)")
-        
-        for i, q_text in enumerate(questions):
-            choice = st.select_slider(
-                f"{i+1}. {q_text}",
-                options=list(options_map.keys())
-            )
-            responses.append(options_map[choice])
-            
-        submitted = st.form_submit_button("Submit Results")
+    in_name = st.text_input("First Name")
+    in_surname = st.text_input("Surname")
+    in_dob = st.text_input("Date of Birth (YYYY-MM-DD)")
+    in_id = st.text_input("ID (5 digits)")
 
-    if submitted:
-        is_valid = True
+    if st.button("Start the Survey"):
+        valid_login = True
         
-        import re
-        from datetime import datetime
-        
-        if not u_name.isalpha():
+        if not in_name.isalpha():
             st.error("Invalid Name: Please use letters only.")
-            is_valid = False
-        if not u_surname.isalpha():
+            valid_login = False
+        if not in_surname.isalpha():
             st.error("Invalid Surname: Please use letters only.")
-            is_valid = False
-        
+            valid_login = False
         try:
-            datetime.strptime(u_dob, '%Y-%m-%d')
+            datetime.strptime(in_dob, '%Y-%m-%d')
         except ValueError:
             st.error("Invalid Date: Please use YYYY-MM-DD format.")
-            is_valid = False
-            
-        if not (u_id.isdigit() and len(u_id) == 5):
+            valid_login = False
+        if not (in_id.isdigit() and len(in_id) == 5):
             st.error("Invalid ID: Must be exactly 5 digits.")
-            is_valid = False
-
-        for r in responses:
-            if r < 0 or r > 5:
-                is_valid = False
-        
-        count = 0
-        while count < 1:
-            if len(responses) != 20:
-                is_valid = False
-            count += 1
-
-        if is_valid:
-            total_score = sum(responses)
-            result_text = get_interpretation(total_score)
+            valid_login = False
             
-            st.success(f"Final Score: {total_score}")
-            st.info(f"Interpretation: {result_text}")
-
-            output_dict = {
-                "user_info": {
-                    "name": u_name,
-                    "surname": u_surname,
-                    "dob": u_dob,
-                    "id": u_id
-                },
-                "total_score": total_score, 
-                "interpretation": result_text
+        if valid_login:
+            st.session_state.authenticated = True
+            st.session_state.user_data = {
+                "name": in_name,
+                "surname": in_surname,
+                "dob": in_dob,
+                "id": in_id
             }
-            json_string = json.dumps(output_dict, indent=2)
+            st.rerun()
+
+if st.session_state.authenticated:
+    st.title("Program Evaluation Survey")
+    st.write(f"User: {st.session_state.user_data['name']} {st.session_state.user_data['surname']} | ID: {st.session_state.user_data['id']}")
+
+    questions = load_survey_data('questions.json')
+
+    if not questions:
+        st.error("Error: questions.json not found!")
+    else:
+        options_map = {
+            "Never / Strongly Disagree (0)": 0,
+            "Rarely / Disagree (1)": 1,
+            "Sometimes / Neutral (2)": 2,
+            "Often / Agree (3)": 3,
+            "Very Often / Strongly Agree (4)": 4,
+            "Always / Completely Agree (5)": 5
+        }
+        
+        responses = []
+        
+        u_name = st.session_state.user_data['name']
+        u_surname = st.session_state.user_data['surname']
+        u_dob = st.session_state.user_data['dob']
+        u_id = st.session_state.user_data['id']
+
+        with st.form("survey_form"):
+            st.write("Confirm your details above and complete the questions below.")
             
-            with open("results.json", "w") as f:
-                f.write(json_string)
+            for i, q_text in enumerate(questions):
+                choice = st.select_slider(
+                    f"{i+1}. {q_text}",
+                    options=list(options_map.keys())
+                )
+                responses.append(options_map[choice])
+                
+            submitted = st.form_submit_button("Submit Results")
+
+        if submitted:
+            is_valid = True
             
-            st.download_button(
-                label="Download Results as JSON",
-                data=json_string,
-                file_name="results.json",
-                mime="application/json"
-            )
+            for r in responses:
+                if r < 0 or r > 5:
+                    is_valid = False
+            
+            count = 0
+            while count < 1:
+                if len(responses) != 20:
+                    is_valid = False
+                count += 1
+
+            if is_valid:
+                total_score = sum(responses)
+                result_text = get_interpretation(total_score)
+                
+                st.success(f"Final Score: {total_score}")
+                st.info(f"Interpretation: {result_text}")
+
+                output_dict = {
+                    "user_info": {
+                        "name": u_name,
+                        "surname": u_surname,
+                        "dob": u_dob,
+                        "id": u_id
+                    },
+                    "total_score": total_score, 
+                    "interpretation": result_text
+                }
+                json_string = json.dumps(output_dict, indent=2)
+                
+                with open("results.json", "w") as f:
+                    f.write(json_string)
+                
+                st.download_button(
+                    label="Download Results as JSON",
+                    data=json_string,
+                    file_name=f"results_{u_id}.json",
+                    mime="application/json"
+                )
+    
+    if st.button("Logout"):
+        st.session_state.authenticated = False
+        st.rerun()
