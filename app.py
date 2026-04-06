@@ -111,7 +111,7 @@ elif app_mode == "Start New Questionnaire":
             else:
                 options_map = {
                     "Never (0)": 0, "Rarely (1)": 1, "Sometimes (2)": 2,
-                    "Often (3)": 3, "Very Often (4)": 4, "Always (5)": 5
+                    "Often (3)": 3, "Most of the time (4)": 4, "Always (5)": 5
                 }
                 responses = []
                 with st.form("survey_form"):
