@@ -2,51 +2,50 @@ import streamlit as st
 import json
 import os
 
-var_int = 100
-var_str = "User Survey"
-var_float = 5.0
-var_list = [0, 1, 2, 3, 4, 5]
-var_tuple = (0, 100)
-var_range = range(20)
-var_bool = True
-var_dict = {"status": "active"}
-var_set = {1, 2, 3}
-var_frozenset = frozenset([0, 5])
+v_int = 75
+v_str = "Assessment"
+v_float = 1.0
+v_list = ["Q1", "Q2", "Q3"]
+v_tuple = (0, 5)
+v_range = range(0, 20)
+v_bool = True
+v_dict = {"Status": "Complete"}
+v_set = {1, 2, 3}
+v_frozenset = frozenset([0, 100])
 
-def get_interpretation(score):
-    if score <= 20:
-        return "[Excellent Posture awareness & High Comfort]"
-    elif 21 <= score <= 40:
-        return "[Good Habits & Occasional Stretching]"
-    elif 41 <= score <= 60:
-        return "[Fair Awareness & Improvement of the Workstation Setup]"
-    elif 61 <= score <= 80:
-        return "[Moderate Discomfort & Need for Ergonomic Adjustments.]"
-    else:
-        return "[High Discomfort & Urgent Posture Workshop]"
-
-def load_questions(filename):
-    if os.path.exists(filename):
-        with open(filename, 'r') as f:
+def load_survey_data(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
             return json.load(f)
     return []
 
-st.title("Program Evaluation Survey")
-st.write("Please answer the following Likert-style questions (0-5).")
+def get_interpretation(score):
+    if score <= 20:
+        return "[Excellent Posture awareness & High Comfort: Exemplary, vigilant, disciplined, comfortable, effortless, sustainable]"
+    elif 21 <= score <= 40:
+        return "[Good Habits & Occasional Stretching: Solid, consistent, reliable, stable, comfortable, manageable.]"
+    elif 41 <= score <= 60:
+        return "[Fair Awareness & Improvement of the Workstation Setup: Fair, developing, transitional, noticeable, strained, inconsistent]"
+    elif 61 <= score <= 80:
+        return "[Moderate Discomfort & Need for Ergonomic Adjustments: Troubled, strained, problematic, painful, fatigued, disruptive]"
+    else:
+        return "[High Discomfort & Urgent Posture Workshop: Critical, severe, alarming, chronic, debilitating, unsustainable]"
 
-questions = load_questions('questions.json')
+st.title("Program Evaluation Survey")
+
+questions = load_survey_data('questions.json')
 
 if not questions:
-    st.error("Please ensure 'questions.json' is in the same folder.")
+    st.error("Error: questions.json not found!")
 else:
     responses = []
     
     with st.form("survey_form"):
         for i, q_text in enumerate(questions):
-            score = st.select_slider(f"{i+1}. {q_text}", options=[0, 1, 2, 3, 4, 5])
-            responses.append(score)
-        
-        submitted = st.form_submit_button("Calculate Final Results")
+            val = st.select_slider(f"{i+1}. {q_text}", options=[0, 1, 2, 3, 4, 5])
+            responses.append(val)
+            
+        submitted = st.form_submit_button("Submit Results")
 
     if submitted:
         is_valid = True
@@ -54,20 +53,28 @@ else:
             if r < 0 or r > 5:
                 is_valid = False
         
-        counter = 0
-        while counter < 1:
+        count = 0
+        while count < 1:
             if len(responses) != 20:
                 is_valid = False
-            counter += 1
+            count += 1
 
         if is_valid:
             total_score = sum(responses)
-            result = get_interpretation(total_score)
+            result_text = get_interpretation(total_score)
             
-            st.success(f"Total Score: {total_score}")
-            st.info(f"Interpretation: {result}")
+            st.success(f"Final Score: {total_score}")
+            st.info(f"Interpretation: {result_text}")
 
-            final_data = {"total": total_score, "result": result}
+            output_dict = {"total_score": total_score, "interpretation": result_text}
+            json_string = json.dumps(output_dict, indent=2)
+            
             with open("results.json", "w") as f:
-                json.dump(final_data, f)
-            st.write("Survey results saved to results.json")
+                f.write(json_string)
+            
+            st.download_button(
+                label="Download Results as JSON",
+                data=json_string,
+                file_name="results.json",
+                mime="application/json"
+            )
