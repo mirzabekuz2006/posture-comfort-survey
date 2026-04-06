@@ -34,6 +34,8 @@ st.title("Program Evaluation Survey")
 
 questions = load_survey_data('questions.json')
 
+if not questions:
+    st.error("Error: questions.json not found!")
 else:
     options_map = {
         "Never / Strongly Disagree (0)": 0,
