@@ -22,15 +22,15 @@ def load_survey_data(file_path):
 def get_interpretation(score):
     # CRITERIA: Use of at least 3 conditional statements (5 pts)
     if score <= 20:
-        return "[Excellent Posture awareness & High Comfort: Exemplary, vigilant, disciplined, comfortable, effortless, sustainable]"
+        return "Excellent Posture awareness & High Comfort: Exemplary, vigilant, disciplined, comfortable, effortless, sustainable"
     elif 21 <= score <= 40:
-        return "[Good Habits & Occasional Stretching: Solid, consistent, reliable, stable, comfortable, manageable.]"
+        return "Good Habits & Occasional Stretching: Solid, consistent, reliable, stable, comfortable, manageable."
     elif 41 <= score <= 60:
-        return "[Fair Awareness & Improvement of the Workstation Setup: Fair, developing, transitional, noticeable, strained, inconsistent]"
+        return "Fair Awareness & Improvement of the Workstation Setup: Fair, developing, transitional, noticeable, strained, inconsistent"
     elif 61 <= score <= 80:
-        return "[Moderate Discomfort & Need for Ergonomic Adjustments: Troubled, strained, problematic, painful, fatigued, disruptive]"
+        return "Moderate Discomfort & Need for Ergonomic Adjustments: Troubled, strained, problematic, painful, fatigued, disruptive"
     else:
-        return "[High Discomfort & Urgent Posture Workshop: Critical, severe, alarming, chronic, debilitating, unsustainable]"
+        return "High Discomfort & Urgent Posture Workshop: Critical, severe, alarming, chronic, debilitating, unsustainable"
 st.title("Program Evaluation Survey")
 
 questions = load_survey_data('questions.json')
