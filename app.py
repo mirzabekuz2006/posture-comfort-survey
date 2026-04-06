@@ -9,6 +9,10 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 if 'user_data' not in st.session_state:
     st.session_state.user_data = {}
+if 'survey_submitted' not in st.session_state:
+    st.session_state.survey_submitted = False
+if 'final_results' not in st.session_state:
+    st.session_state.final_results = {}
 
 v_int = 75
 v_str = "Assessment"
@@ -50,8 +54,7 @@ if app_mode == "Load Existing Results":
         if uploaded_file.name.endswith('.json'):
             st.json(json.load(uploaded_file))
         elif uploaded_file.name.endswith('.csv'):
-            content = uploaded_file.read().decode("utf-8")
-            st.text(content)
+            st.text(uploaded_file.read().decode("utf-8"))
         else:
             st.text(uploaded_file.read().decode("utf-8"))
 
@@ -65,19 +68,16 @@ elif app_mode == "Start New Questionnaire":
 
         if st.button("Start the Survey"):
             valid_login = True
-            if not in_name.isalpha():
-                st.error("Invalid Name")
-                valid_login = False
-            if not in_surname.isalpha():
-                st.error("Invalid Surname")
+            if not in_name.isalpha() or not in_surname.isalpha():
+                st.error("Invalid Name/Surname: Use letters only.")
                 valid_login = False
             try:
                 datetime.strptime(in_dob, '%Y-%m-%d')
-            except ValueError:
-                st.error("Invalid Date")
+            except:
+                st.error("Invalid Date format.")
                 valid_login = False
             if not (in_id.isdigit() and len(in_id) == 5):
-                st.error("Invalid ID")
+                st.error("ID must be 5 digits.")
                 valid_login = False
             
             if valid_login:
@@ -86,55 +86,75 @@ elif app_mode == "Start New Questionnaire":
                 st.rerun()
 
     if st.session_state.authenticated:
-        st.title("Program Evaluation Survey")
-        questions = load_survey_data('questions.json')
-
-        if not questions:
-            st.error("questions.json not found!")
+        # Display Results at the top if they have already submitted
+        if st.session_state.survey_submitted:
+            st.success(f"Final Score: {st.session_state.final_results['total_score']}")
+            st.info(f"Interpretation: {st.session_state.final_results['interpretation']}")
+            
+            # Download section remains visible at top after submission
+            res = st.session_state.final_results
+            st.download_button(
+                label=f"Download {res['format']}",
+                data=res['data_str'],
+                file_name=f"results_{st.session_state.user_data['id']}.{res['ext']}",
+                mime=res['mime']
+            )
+            if st.button("Take Survey Again"):
+                st.session_state.survey_submitted = False
+                st.rerun()
         else:
-            options_map = {
-                "Never (0)": 0, "Rarely (1)": 1, "Sometimes (2)": 2,
-                "Often (3)": 3, "Very Often (4)": 4, "Always (5)": 5
-            }
-            responses = []
-            u_info = st.session_state.user_data
+            st.title("Program Evaluation Survey")
+            questions = load_survey_data('questions.json')
 
-            with st.form("survey_form"):
-                for i, q_text in enumerate(questions):
-                    choice = st.select_slider(f"{i+1}. {q_text}", options=list(options_map.keys()))
-                    responses.append(options_map[choice])
-                
-                export_format = st.selectbox("Select Save Format", ["JSON", "CSV", "TXT"])
-                submitted = st.form_submit_button("Submit Results")
+            if not questions:
+                st.error("questions.json not found!")
+            else:
+                options_map = {
+                    "Never (0)": 0, "Rarely (1)": 1, "Sometimes (2)": 2,
+                    "Often (3)": 3, "Very Often (4)": 4, "Always (5)": 5
+                }
+                responses = []
+                with st.form("survey_form"):
+                    for i, q_text in enumerate(questions):
+                        choice = st.select_slider(f"{i+1}. {q_text}", options=list(options_map.keys()))
+                        responses.append(options_map[choice])
+                    
+                    export_format = st.selectbox("Select Save Format", ["JSON", "CSV", "TXT"])
+                    submitted = st.form_submit_button("Submit Results")
 
-            if submitted:
-                is_valid = len(responses) == 20
-                if is_valid:
-                    total_score = sum(responses)
-                    result_text = get_interpretation(total_score)
-                    st.success(f"Final Score: {total_score}")
-                    
-                    output_dict = {"user_info": u_info, "total_score": total_score, "interpretation": result_text}
-                    
-                    if export_format == "JSON":
-                        data_str = json.dumps(output_dict, indent=2)
-                        ext, mime = "json", "application/json"
-                    elif export_format == "CSV":
-                        si = io.StringIO()
-                        cw = csv.writer(si)
-                        cw.writerow(["Name", "Surname", "ID", "Score", "Result"])
-                        cw.writerow([u_info['name'], u_info['surname'], u_info['id'], total_score, result_text])
-                        data_str = si.getvalue()
-                        ext, mime = "csv", "text/csv"
+                if submitted:
+                    if len(responses) == 20:
+                        total_score = sum(responses)
+                        result_text = get_interpretation(total_score)
+                        
+                        # Prepare data for download
+                        u_info = st.session_state.user_data
+                        if export_format == "JSON":
+                            data_str = json.dumps({"user": u_info, "score": total_score, "result": result_text}, indent=2)
+                            ext, mime = "json", "application/json"
+                        elif export_format == "CSV":
+                            si = io.StringIO()
+                            cw = csv.writer(si); cw.writerow(["Name", "ID", "Score", "Result"])
+                            cw.writerow([u_info['name'], u_info['id'], total_score, result_text])
+                            data_str = si.getvalue(); ext, mime = "csv", "text/csv"
+                        else:
+                            data_str = f"Score: {total_score}\nResult: {result_text}"; ext, mime = "txt", "text/plain"
+
+                        # Store in session state and flip the flag
+                        st.session_state.final_results = {
+                            "total_score": total_score,
+                            "interpretation": result_text,
+                            "data_str": data_str,
+                            "ext": ext,
+                            "mime": mime,
+                            "format": export_format
+                        }
+                        st.session_state.survey_submitted = True
+                        st.rerun()
                     else:
-                        data_str = f"Result for {u_info['name']} {u_info['surname']}\nScore: {total_score}\nInterpretation: {result_text}"
-                        ext, mime = "txt", "text/plain"
-
-                    with open(f"results.{ext}", "w") as f:
-                        f.write(data_str)
-
-                    st.download_button(label=f"Download {export_format}", data=data_str, file_name=f"results_{u_info['id']}.{ext}", mime=mime)
+                        st.error("Please answer all questions.")
 
         if st.button("Logout"):
             st.session_state.authenticated = False
+            st.session_state.survey_submitted = False
             st.rerun()
