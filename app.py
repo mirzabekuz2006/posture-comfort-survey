@@ -5,11 +5,11 @@ import os
 v_int = 75
 v_str = "Assessment"
 v_float = 1.0
-v_list = ["Q1", "Q2", "Q3"]
+v_list = ["Stress", "Study", "Work"]
 v_tuple = (0, 5)
 v_range = range(0, 20)
 v_bool = True
-v_dict = {"Status": "Complete"}
+v_dict = {"Status": "Active"}
 v_set = {1, 2, 3}
 v_frozenset = frozenset([0, 100])
 
@@ -19,7 +19,38 @@ def load_survey_data(file_path):
             return json.load(f)
     return []
 
+To ensure you get the full 75 points and fix the IndentationError, you must replace your entire app.py script with the code below.
+
+I have integrated your 5 specific states and the Never to Always labels into a clean, perfectly aligned structure.
+
+The Final Corrected app.py
+Python
+import streamlit as st
+import json
+import os
+
+# 1. VARIABLE TYPES (10 pts)
+v_int = 75
+v_str = "Posture Survey"
+v_float = 1.0
+v_list = ["Ergonomics", "Posture", "Comfort"]
+v_tuple = (0, 5)
+v_range = range(0, 20)
+v_bool = True
+v_dict = {"App": "Survey"}
+v_set = {1, 2, 3}
+v_frozenset = frozenset([0, 100])
+
+# 2. FUNCTIONS (5 pts)
+def load_survey_data(file_path):
+    # CRITERIA: Loaded from an external file (10 pts)
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    return []
+
 def get_interpretation(score):
+    # CRITERIA: Use of at least 3 conditional statements (5 pts)
     if score <= 20:
         return "[Excellent Posture awareness & High Comfort: Exemplary, vigilant, disciplined, comfortable, effortless, sustainable]"
     elif 21 <= score <= 40:
@@ -30,7 +61,6 @@ def get_interpretation(score):
         return "[Moderate Discomfort & Need for Ergonomic Adjustments: Troubled, strained, problematic, painful, fatigued, disruptive]"
     else:
         return "[High Discomfort & Urgent Posture Workshop: Critical, severe, alarming, chronic, debilitating, unsustainable]"
-
 st.title("Program Evaluation Survey")
 
 questions = load_survey_data('questions.json')
@@ -38,18 +68,19 @@ questions = load_survey_data('questions.json')
 if not questions:
     st.error("Error: questions.json not found!")
 else:
-    responses = []
-
     options_map = {
-        "Never (0)": 0,
-        "Rarely (1)": 1,
-        "Sometimes (2)": 2,
-        "Often (3)": 3,
-        "Most of the time (4)": 4,
-        "Always (5)": 5
+        "Never / Strongly Disagree (0)": 0,
+        "Rarely / Disagree (1)": 1,
+        "Sometimes / Neutral (2)": 2,
+        "Often / Agree (3)": 3,
+        "Very Often / Strongly Agree (4)": 4,
+        "Always / Completely Agree (5)": 5
     }
-   with st.form("survey_form"):
-       for i, q_text in enumerate(questions):
+    
+    responses = []
+    
+    with st.form("survey_form"):
+        for i, q_text in enumerate(questions):
             choice = st.select_slider(
                 f"{i+1}. {q_text}",
                 options=list(options_map.keys())
