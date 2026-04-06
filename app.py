@@ -39,11 +39,22 @@ if not questions:
     st.error("Error: questions.json not found!")
 else:
     responses = []
-    
-    with st.form("survey_form"):
+
+    options_map = {
+        "Never (0)": 0,
+        "Rarely (1)": 1,
+        "Sometimes (2)": 2,
+        "Often (3)": 3,
+        "Most of the time (4)": 4,
+        "Always (5)": 5
+    }
+   with st.form("survey_form"):
         for i, q_text in enumerate(questions):
-            val = st.select_slider(f"{i+1}. {q_text}", options=[0, 1, 2, 3, 4, 5])
-            responses.append(val)
+            choice = st.select_slider(
+                f"{i+1}. {q_text}",
+                options=list(options_map.keys())
+            )
+            responses.append(options_map[choice])
             
         submitted = st.form_submit_button("Submit Results")
 
