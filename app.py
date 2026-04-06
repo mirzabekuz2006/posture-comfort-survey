@@ -86,12 +86,10 @@ elif app_mode == "Start New Questionnaire":
                 st.rerun()
 
     if st.session_state.authenticated:
-        # Display Results at the top if they have already submitted
         if st.session_state.survey_submitted:
             st.success(f"Final Score: {st.session_state.final_results['total_score']}")
             st.info(f"Interpretation: {st.session_state.final_results['interpretation']}")
             
-            # Download section remains visible at top after submission
             res = st.session_state.final_results
             st.download_button(
                 label=f"Download {res['format']}",
@@ -127,7 +125,6 @@ elif app_mode == "Start New Questionnaire":
                         total_score = sum(responses)
                         result_text = get_interpretation(total_score)
                         
-                        # Prepare data for download
                         u_info = st.session_state.user_data
                         if export_format == "JSON":
                             data_str = json.dumps({"user": u_info, "score": total_score, "result": result_text}, indent=2)
@@ -140,7 +137,6 @@ elif app_mode == "Start New Questionnaire":
                         else:
                             data_str = f"Score: {total_score}\nResult: {result_text}"; ext, mime = "txt", "text/plain"
 
-                        # Store in session state and flip the flag
                         st.session_state.final_results = {
                             "total_score": total_score,
                             "interpretation": result_text,
